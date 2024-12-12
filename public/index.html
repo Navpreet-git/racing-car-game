@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Racing Car Game</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="initialScreen">
+    <img class="initialScreenImg" src="images/initial.png" alt="Initial Screen">
+    <div class="content">
+      <p class="username">Username:</p>
+      <input class="usernameInput" type="text">
+      <button class="createBut" onclick="createGame">Create game</button>
+      <button class="joinBut" onclick="joinGame">Join game</button>
+      <button class="rulesBut" onclick="showRules()">Rules</button>
+    </div>
+    <div id="rulesBlock">
+      <h1>
+        In the game you can drive without any rules, but in real life, be careful on the road.
+        And fasten your belt!
+      </h1>
+    </div>
+  </div>
+  <script src="initialScreenScript.js"></script>
+</body>
+</html>
+
