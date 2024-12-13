@@ -48,6 +48,6 @@ body {
     cursor: pointer;
 }
 
-    #play-button:hover {
-        background-color: #0056b3;
-    }
+#play-button:hover {
+    background-color: #0056b3;
+}
