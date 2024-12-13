@@ -51,6 +51,43 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('startGame', (gameCode) => {
+        const lobby = lobbies[gameCode];
+        if (lobby) {
+            const player = lobby.players.find((p) => p.id === socket.id);
+            if (player) {
+                // Setting fixed starting positions for now later can be changed as according to the canvas
+                player.x = 100;
+                player.y = 100;
+    
+                console.log(`Game started for player ${player.username} in game ${gameCode} at (${player.x}, ${player.y})`);
+                socket.emit('gameStarted', player); // Send the full player object
+                io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Broadcast updated player positions to be used in the mini map 
+            }
+        }
+    });
+
+    socket.on('playerMove', (position) => {
+        const gameCode = Object.keys(socket.rooms).find((room) => room !== socket.id);
+        if (!gameCode || !lobbies[gameCode]) return;
+    
+        const player = lobbies[gameCode].players.find((p) => p.id === socket.id);
+        if (player) {
+            player.x = position.x; // Update player's position
+            player.y = position.y;
+            console.log(`Player ${player.username} moved to (${player.x}, ${player.y})`);
+            io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Send updates to all clients
+        }
+    });
+
+
+    function getPlayersInGame(gameCode) {
+        return lobbies[gameCode].players.reduce((acc, player) => {
+            acc[player.id] = { x: player.x, y: player.y, username: player.username };
+            return acc;
+        }, {});
+    }
+
     // Handle user disconnection
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);
