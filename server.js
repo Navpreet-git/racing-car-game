@@ -7,8 +7,9 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 app.use(express.static('public'));
-
+ 
 const lobbies = {};
+const playerGameMap = {}; // Map of socket.id to gameCode
 
 function generateGameCode() {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -26,27 +27,31 @@ io.on('connection', (socket) => {
     // Handle creating a new game
     socket.on('createGame', (username) => {
         const gameCode = generateGameCode();
-        lobbies[gameCode] = { players: [{ id: socket.id, username }] }; // Add the creator to the new game
-        socket.join(gameCode); // Join the socket to the game room
+        lobbies[gameCode] = { players: [{ id: socket.id, username }] };
+        socket.join(gameCode);
+        playerGameMap[socket.id] = gameCode;
         console.log(`Game created with code: ${gameCode} by ${username}`);
+        socket.join(gameCode);
 
-        // Notify the creator and update the lobby for all participants
         socket.emit('gameCreated', { gameCode });
-        io.to(gameCode).emit('lobbyUpdate', { players: lobbies[gameCode].players });
     });
 
     // Handle joining an existing game
     socket.on('joinGame', ({ gameCode, username }) => {
         if (lobbies[gameCode]) {
-            lobbies[gameCode].players.push({ id: socket.id, username }); // Add the new player
-            socket.join(gameCode); // Join the socket to the game room
-            console.log(`${username} joined game ${gameCode}`);
-
-            // Notify the new player and update the lobby for all participants
+            lobbies[gameCode].players.push({ id: socket.id, username, x: 100, y: 100 });
+            socket.join(gameCode);
+            playerGameMap[socket.id] = gameCode;
+    
             socket.emit('gameJoined', { success: true, gameCode });
+    
             io.to(gameCode).emit('lobbyUpdate', { players: lobbies[gameCode].players });
+    
+            socket.emit('updatePlayers', getPlayersInGame(gameCode));
+    
+            console.log(`${username} joined game ${gameCode}`);
         } else {
-            // Notify the player if the game code is invalid
+            console.log(`Game code ${gameCode} not found.`);
             socket.emit('gameJoined', { success: false, message: 'Game not found' });
         }
     });
@@ -56,31 +61,37 @@ io.on('connection', (socket) => {
         if (lobby) {
             const player = lobby.players.find((p) => p.id === socket.id);
             if (player) {
-                // Setting fixed starting positions for now later can be changed as according to the canvas
-                player.x = 100;
-                player.y = 100;
+                // Set fixed starting positions for now
+                player.x = 100; // Fixed X coordinate
+                player.y = 100; // Fixed Y coordinate
     
                 console.log(`Game started for player ${player.username} in game ${gameCode} at (${player.x}, ${player.y})`);
                 socket.emit('gameStarted', player); // Send the full player object
-                io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Broadcast updated player positions to be used in the mini map 
+                io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Broadcast updated player positions
             }
         }
     });
 
     socket.on('playerMove', (position) => {
-        const gameCode = Object.keys(socket.rooms).find((room) => room !== socket.id);
-        if (!gameCode || !lobbies[gameCode]) return;
-    
-        const player = lobbies[gameCode].players.find((p) => p.id === socket.id);
-        if (player) {
-            player.x = position.x; // Update player's position
-            player.y = position.y;
-            console.log(`Player ${player.username} moved to (${player.x}, ${player.y})`);
-            io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Send updates to all clients
+        const gameCode = playerGameMap[socket.id];
+        if (!gameCode || !lobbies[gameCode]) {
+            console.log(`Lobby not found for gameCode: ${gameCode} (socket ID: ${socket.id})`);
+            return;
         }
+        const player = lobbies[gameCode].players.find((p) => p.id === socket.id);
+        if (!player) {
+            console.log(`Player not found with socket ID: ${socket.id} in game ${gameCode}`);
+            return;
+        }
+        // Update the player's position
+        player.x = position.x;
+        player.y = position.y;
+        console.log(`Player ${player.username} moved to (${player.x}, ${player.y})`);
+    
+        // Broadcast the updated player positions to all players in the game
+        io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Broadcast new positions
     });
-
-
+    
     function getPlayersInGame(gameCode) {
         return lobbies[gameCode].players.reduce((acc, player) => {
             acc[player.id] = { x: player.x, y: player.y, username: player.username };

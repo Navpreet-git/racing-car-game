@@ -5,24 +5,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>2D Racing Car Game</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.1/socket.io.min.js"></script>
+
 </head>
 <body>
   <div class="initialScreen">
-    <img class="initialScreenImg" src="images/initial.png" alt="Initial Screen">
     <div class="content">
-      <p class="username">Username:</p>
-      <input class="usernameInput" type="text" required>
+     NAME: <input class="usernameInput" type="text" required> 
       <button class="createBut" onclick="createGame()">Create game</button>
       <button class="joinBut" onclick="joinGame()">Join game</button>
       <button class="rulesBut" onclick="showRules()">Rules</button>
     </div>
     <div id="rulesBlock">
+      <span class="close-btn" onclick="showRules()">&#10006;</span> 
       <h1>
-        In the game you can drive without any rules, but in real life, be careful on the road.
-        And fasten your belt!
+          In the game, you can drive without any rules, but in real life, be careful on the road.
+          And fasten your belt!
       </h1>
-    </div>
   </div>
+  
+  </div>
+  <div class="createGame">
+    <div class="game-code">
+        <label for="game-code-box">GAME CODE:</label>
+        <div id="game-code-box" class="code-box">12345</div>
+    </div>
+    <div class="players-joined">
+        <h2>PLAYERS JOINED</h2>
+        <ul id="player-list">
+            <!-- Players will be dynamically listed here -->
+        </ul>
+    </div>
+    <button id="play-button">PLAY</button>
+    <button onclick="showInitialScreen()">Back</button> <!-- Back button -->
+</div>
+
+<div class="joinGame">
+  <div class="left-panel">
+    <input type="text" id="game-code-input" placeholder="Enter Game Code">
+    <button id="join-button" onclick="joinGameWithCode()">JOIN GAME</button>
+    <button onclick="showInitialScreen()">Back</button> <!-- Back button -->
+  </div>
+  <div class="right-panel">
+    <h2>PLAYERS INSIDE THIS LOBBY</h2>
+    <ul id="lobby-player-list">
+      <!-- Players will be dynamically listed here -->
+    </ul>
+    <button id="play-button">PLAY</button>
+  </div>
+</div>
+
+
   <script src="script.js"></script>
 </body>
 </html>
