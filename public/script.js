@@ -55,7 +55,6 @@ function createGame() {
 
 function joinGame() {
     if (!handleUsernameInput()) return;
-    isInCreateMode = false; // Flag for join game mode
 
     document.querySelector('.initialScreen').style.display = 'none';
     document.querySelector('.createGame').style.display = 'none';
@@ -64,13 +63,19 @@ function joinGame() {
 
 function joinGameWithCode() {
     const gameCode = document.getElementById('game-code-input').value.trim();
+    if (!handleUsernameInput()) return;
+
+    document.querySelector('.initialScreen').style.display = 'none';
+    document.querySelector('.createGame').style.display = 'none';
+    document.querySelector('.joinGame').style.display = 'block';
     if (!gameCode) {
         alert("Please enter a game code!");
         return;
     }
 
     socket.emit('joinGame', { gameCode, username });
-
+    isInCreateMode = false; // Flag for join game mode
+    console.log('isInCreateMode set to ,' , isInCreateMode)
     socket.on('gameJoined', ({ success, message, gameCode }) => {
         if (success) {
             console.log(`Joined game with code: ${gameCode}`);
@@ -98,18 +103,56 @@ function createGameCanvas(player) {
     carImg.src = '/images/car.png';
 
     carImg.onload = () => {
-        function gameLoop() {
-            if (playerX + velocityX >= 0 && playerX + velocityX <= canvas.width - 50) playerX += velocityX;
-            if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) playerY += velocityY;
-
+        function drawRoad() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Road dimensions
+            const roadWidth = canvas.width / 3; 
+            const roadX = (canvas.width - roadWidth) / 2; 
+
+            ctx.fillStyle = "#333"; 
+            ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+
+            ctx.strokeStyle = "#fff"; 
+            ctx.lineWidth = 2;
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(roadX + roadWidth / 3, y); 
+                ctx.lineTo(roadX + roadWidth / 3, y + 20);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(roadX + (2 * roadWidth) / 3, y); 
+                ctx.lineTo(roadX + (2 * roadWidth) / 3, y + 20);
+                ctx.stroke();
+            }
+        }
+
+        function gameLoop() {
+            if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
+                playerX += velocityX;
+            }
+            if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) {
+                playerY += velocityY;
+            }
+
+            drawRoad();
             ctx.drawImage(carImg, playerX, playerY, 50, 50);
+
             requestAnimationFrame(gameLoop);
         }
+
+        const roadWidth = canvas.width / 3;
+        const roadX = (canvas.width - roadWidth) / 2;
+        playerX = roadX + roadWidth / 2 - 25; // Centered in the road's middle lane
+        playerY = canvas.height - 60; 
 
         gameLoop();
     };
 }
+
+
+
 
 function handleKeyMovement(e, isKeyDown) {
     if (e.key === 'ArrowUp') velocityY = isKeyDown ? -speed : 0;
@@ -121,9 +164,32 @@ function handleKeyMovement(e, isKeyDown) {
         socket.emit('playerMove', { x: playerX, y: playerY });
     }
 }
+document.getElementById('play-button-join').addEventListener('click', () =>{ 
 
+    console.log('isInCreateMode,',isInCreateMode)
+
+    const gameCode = document.getElementById('game-code-input').value.trim();
+
+    socket.emit('startGame', gameCode);
+
+    socket.on('gameStarted', (player) => {
+        console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
+
+        document.querySelector('.initialScreen').style.display = 'none';
+        document.querySelector('.createGame').style.display = 'none';
+        document.querySelector('.joinGame').style.display = 'none';
+        document.getElementById('game-code-box').style.display = 'none';
+        document.getElementById('player-list').style.display = 'none';
+
+        createGameCanvas(player);
+
+        document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
+        document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
+    });
+});
 document.getElementById('play-button').addEventListener('click', () => {
-    if (isInCreateMode) {
+    
+        console.log('isInCreateMode,',isInCreateMode)
         const gameCode = document.getElementById('game-code-box').textContent;
 
         socket.emit('startGame', gameCode);
@@ -142,26 +208,8 @@ document.getElementById('play-button').addEventListener('click', () => {
             document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
             document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
         });
-    } else {
-        const gameCode = document.getElementById('game-code-input').value.trim();
-
-        socket.emit('startGame', gameCode);
-
-        socket.on('gameStarted', (player) => {
-            console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
-
-            document.querySelector('.initialScreen').style.display = 'none';
-            document.querySelector('.createGame').style.display = 'none';
-            document.querySelector('.joinGame').style.display = 'none';
-            document.getElementById('game-code-box').style.display = 'none';
-            document.getElementById('player-list').style.display = 'none';
-
-            createGameCanvas(player);
-
-            document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
-            document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
-        });
-    }
+       
+    
 });
 function showInitialScreen() {
     document.querySelector('.initialScreen').style.display = 'block';

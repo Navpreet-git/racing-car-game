@@ -13,7 +13,8 @@
     <div class="content">
      NAME: <input class="usernameInput" type="text" required> 
       <button class="createBut" onclick="createGame()">Create game</button>
-      <button class="joinBut" onclick="joinGame()">Join game</button>
+      <input type="text" id="game-code-input" placeholder="Enter Game Code">
+      <button class="joinBut" onclick="joinGameWithCode()">Join game</button>
       <button class="rulesBut" onclick="showRules()">Rules</button>
     </div>
     <div id="rulesBlock">
@@ -41,17 +42,14 @@
 </div>
 
 <div class="joinGame">
-  <div class="left-panel">
-    <input type="text" id="game-code-input" placeholder="Enter Game Code">
-    <button id="join-button" onclick="joinGameWithCode()">JOIN GAME</button>
-    <button onclick="showInitialScreen()">Back</button> <!-- Back button -->
-  </div>
+  
   <div class="right-panel">
     <h2>PLAYERS INSIDE THIS LOBBY</h2>
     <ul id="lobby-player-list">
       <!-- Players will be dynamically listed here -->
     </ul>
-    <button id="play-button">PLAY</button>
+    <button id="play-button-join">PLAY</button>
+    <button onclick="showInitialScreen()">Back</button> <!-- Back button -->
   </div>
 </div>
 

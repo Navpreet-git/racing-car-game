@@ -61,11 +61,11 @@ io.on('connection', (socket) => {
         if (lobby) {
             const player = lobby.players.find((p) => p.id === socket.id);
             if (player) {
-                // Set fixed starting positions for now
-                player.x = 100; // Fixed X coordinate
-                player.y = 100; // Fixed Y coordinate
+                // // Set fixed starting positions for now
+                // player.x = 100; // Fixed X coordinate
+                // player.y = 100; // Fixed Y coordinate
     
-                console.log(`Game started for player ${player.username} in game ${gameCode} at (${player.x}, ${player.y})`);
+                console.log(`Game started for player ${player.username} in game ${gameCode})`);
                 socket.emit('gameStarted', player); // Send the full player object
                 io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Broadcast updated player positions
             }
