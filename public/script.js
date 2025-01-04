@@ -3,6 +3,8 @@ const canvas = document.createElement('canvas');
 let username = "";
 let playerX, playerY, velocityX = 0, velocityY = 0, speed = 2;
 let isInCreateMode = false;
+let otherPlayers = [];
+
 
 function showRules(){
     const rules = document.getElementById("rulesBlock");
@@ -98,7 +100,26 @@ function createGameCanvas(player) {
     canvas.height = 600;
     document.body.appendChild(canvas);
 
+    const miniMapCanvas = document.createElement('canvas');
+    miniMapCanvas.id = 'miniMapCanvas';
+    miniMapCanvas.width = 200;
+    miniMapCanvas.height = 150;
+    const miniMapContainer = document.createElement('div');
+    miniMapContainer.id = 'miniMapContainer';
+    miniMapContainer.appendChild(miniMapCanvas);
+    document.body.appendChild(miniMapContainer);
+
+    // MiniMap styling
+    miniMapContainer.style.position = 'absolute';
+    miniMapContainer.style.right = '350px';
+    miniMapContainer.style.border = '2px solid #000';
+    miniMapContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    miniMapContainer.style.borderRadius = '5px';
+
     const ctx = canvas.getContext('2d');
+    const miniMapCtx = miniMapCanvas.getContext('2d');
+
+
     const carImg = new Image();
     carImg.src = '/images/car.png';
 
@@ -128,6 +149,34 @@ function createGameCanvas(player) {
             }
         }
 
+        function drawMiniMap() {
+            miniMapCtx.clearRect(0, 0, miniMapCanvas.width, miniMapCanvas.height);
+
+            const scale = miniMapCanvas.width / canvas.width;
+
+            // Draw the road on the mini-map
+            miniMapCtx.fillStyle = "#333";
+            miniMapCtx.fillRect(
+                (canvas.width / 3) * scale,
+                0,
+                (canvas.width / 3) * scale,
+                miniMapCanvas.height
+            );
+
+            // Draw all players on the mini-map
+            Object.keys(otherPlayers).forEach(playerId => {
+                const { x, y, username: playerUsername } = otherPlayers[playerId];
+                miniMapCtx.fillStyle = playerUsername === username ? "red" : "blue";
+                miniMapCtx.fillRect(
+                    x * scale,
+                    y * scale,
+                    10, // Size of player on mini-map
+                    10
+                );
+            });
+            
+        }
+
         function gameLoop() {
             if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
                 playerX += velocityX;
@@ -138,6 +187,8 @@ function createGameCanvas(player) {
 
             drawRoad();
             ctx.drawImage(carImg, playerX, playerY, 50, 50);
+            drawMiniMap();
+
 
             requestAnimationFrame(gameLoop);
         }
@@ -149,10 +200,13 @@ function createGameCanvas(player) {
 
         gameLoop();
     };
+
+     // Listen for updates from the server about other players
+     socket.on('updatePlayers', (players) => {
+        otherPlayers = players; // Update the list of all players
+    });
+
 }
-
-
-
 
 function handleKeyMovement(e, isKeyDown) {
     if (e.key === 'ArrowUp') velocityY = isKeyDown ? -speed : 0;
