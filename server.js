@@ -99,6 +99,14 @@ io.on('connection', (socket) => {
         }, {});
     }
 
+
+    socket.on('playerWon', ({ username }) => {
+        const gameCode = playerGameMap[socket.id];
+        if (gameCode && lobbies[gameCode]) {
+            io.to(gameCode).emit('gameOver', { winner: username });
+            console.log(`Player ${username} has won the game in lobby ${gameCode}`);
+        }
+    });
     // Handle user disconnection
     socket.on('disconnect', () => {
         console.log(`User disconnected: ${socket.id}`);

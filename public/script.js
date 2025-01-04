@@ -4,6 +4,7 @@ let username = "";
 let playerX, playerY, velocityX = 0, velocityY = 0, speed = 2;
 let isInCreateMode = false;
 let otherPlayers = [];
+let gameIsOver = false; // Flag to track if the game is over
 
 
 function showRules(){
@@ -119,9 +120,10 @@ function createGameCanvas(player) {
     const ctx = canvas.getContext('2d');
     const miniMapCtx = miniMapCanvas.getContext('2d');
 
-
     const carImg = new Image();
     carImg.src = '/images/car.png';
+
+    const finishLineY = 50; // Y-coordinate of the finish line
 
     carImg.onload = () => {
         function drawRoad() {
@@ -134,6 +136,11 @@ function createGameCanvas(player) {
             ctx.fillStyle = "#333"; 
             ctx.fillRect(roadX, 0, roadWidth, canvas.height);
 
+            // Draw finish line
+            ctx.fillStyle = "#FF0000"; // Gold color for finish line
+            ctx.fillRect(roadX, finishLineY, roadWidth, 10);
+
+            // Draw road markings
             ctx.strokeStyle = "#fff"; 
             ctx.lineWidth = 2;
             for (let y = 0; y < canvas.height; y += 40) {
@@ -174,22 +181,27 @@ function createGameCanvas(player) {
                     10
                 );
             });
-            
         }
 
         function gameLoop() {
-            if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
-                playerX += velocityX;
+            if (!gameIsOver) {
+                if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
+                    playerX += velocityX;
+                }
+                if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) {
+                    playerY += velocityY;
+                }
             }
-            if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) {
-                playerY += velocityY;
-            }
-
+        
             drawRoad();
             ctx.drawImage(carImg, playerX, playerY, 50, 50);
             drawMiniMap();
-
-
+        
+            // Check if the player crosses the finish line
+            if (!gameIsOver && playerY <= finishLineY) {
+                socket.emit('playerWon', { username });
+            }
+        
             requestAnimationFrame(gameLoop);
         }
 
@@ -201,12 +213,12 @@ function createGameCanvas(player) {
         gameLoop();
     };
 
-     // Listen for updates from the server about other players
-     socket.on('updatePlayers', (players) => {
+    // Listen for updates from the server about other players
+    socket.on('updatePlayers', (players) => {
         otherPlayers = players; // Update the list of all players
     });
-
 }
+
 
 function handleKeyMovement(e, isKeyDown) {
     if (e.key === 'ArrowUp') velocityY = isKeyDown ? -speed : 0;
@@ -279,9 +291,15 @@ function returnHome(){
     window.location.href = "index.html";
 }
 
-function showWinner(winnerName) {
-    const winnerElement = document.getElementById('winnerName');
-    const nameSpan = document.getElementById('winner');
-    nameSpan.textContent = winnerName;
-    winnerElement.style.display = 'block';
-}
+socket.on('gameOver', ({ winner }) => {
+    gameIsOver = true; // Stop movement
+
+    const winnerPopup = document.getElementById('winner-popup');
+    const winnerMessage = document.getElementById('winner-message');
+    
+    winnerMessage.textContent = `${winner} has won the game!`;
+
+    winnerPopup.style.display = 'block';
+});
+
+
