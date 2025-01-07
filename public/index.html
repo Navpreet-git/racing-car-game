@@ -10,66 +10,66 @@
 </head>
 
 <body>
-  <div class="initialScreen">
-    <div class="content">
-      <label for="username-input">NAME:</label>
-      <input class="usernameInput" type="text" id="username-input" required>
-      <button class="createBut" onclick="createGame()">Create game</button>
-      <input type="text" id="game-code-input" placeholder="Enter Game Code">
-      <button class="joinBut" onclick="joinGameWithCode()">Join game</button>
-      <button class="rulesBut" onclick="showRules()">Rules</button>
+    <div class="initialScreen">
+        <div class="content">
+            <label for="username-input">NAME:</label>
+            <input class="usernameInput" type="text" id="username-input" required>
+            <button class="createBut" onclick="createGame()">Create game</button>
+            <input type="text" id="game-code-input" placeholder="Enter Game Code">
+            <button class="joinBut" onclick="joinGameWithCode()">Join game</button>
+            <button class="rulesBut" onclick="showRules()">Rules</button>
+        </div>
+        <div id="rulesBlock">
+            <span class="close-btn" onclick="showRules()">&#10006;</span>
+            <h1>
+                Rules of the Game
+                <ol>
+                    <li>Each player must enter their name to join the game.</li>
+                    <li>To create a game, click the "Create game" button and share the game code with friends.</li>
+                    <li>To join a game, enter the game code and click the "Join game" button.</li>
+                    <li>Once all players have joined, the game creator can start the game by clicking the "PLAY" button.</li>
+                    <li>Use the arrow keys to control your car and race against other players.</li>
+                    <li>The first player to reach the finish line wins the game.</li>
+                    <li>Have fun and play fair!</li>
+                </ol>
+            </h1>
+        </div>
     </div>
-    <div id="rulesBlock">
-      <span class="close-btn" onclick="showRules()">&#10006;</span>
-      <h1>
-        Rules of the Game 
-      <ol>
-        <li>Each player must enter their name to join the game.</li>
-        <li>To create a game, click the "Create game" button and share the game code with friends.</li>
-        <li>To join a game, enter the game code and click the "Join game" button.</li>
-        <li>Once all players have joined, the game creator can start the game by clicking the "PLAY" button.</li>
-        <li>Use the arrow keys to control your car and race against other players.</li>
-        <li>The first player to reach the finish line wins the game.</li>
-        <li>Have fun and play fair!</li>
-      </ol>
-      </h1>
-    </div>
-  </div>
 
-  <div class="createGame">
-    <div class="game-code">
-      <label for="game-code-box">GAME CODE:</label>
-      <div id="game-code-box" class="code-box">12345</div>
+    <div class="createGame">
+        <div class="game-code">
+            <label for="game-code-box">GAME CODE:</label>
+            <div id="game-code-box" class="code-box">12345</div>
+        </div>
+        <div class="players-joined">
+            <h2>PLAYERS JOINED</h2>
+            <ul id="player-list">
+                <!-- Players will be dynamically listed here -->
+            </ul>
+        </div>
+        <button id="play-button">PLAY</button>
+        <button onclick="showInitialScreen()">Back</button>
     </div>
-    <div class="players-joined">
-      <h2>PLAYERS JOINED</h2>
-      <ul id="player-list">
-        <!-- Players will be dynamically listed here -->
-      </ul>
-    </div>
-    <button id="play-button">PLAY</button>
-    <button onclick="showInitialScreen()">Back</button>
-  </div>
 
-  <div class="joinGame">
-    <div class="right-panel">
-      <h2>PLAYERS INSIDE THIS LOBBY</h2>
-      <ul id="lobby-player-list">
-        <!-- Players will be dynamically listed here -->
-      </ul>
-      <button id="play-button-join">PLAY</button>
-      <button onclick="showInitialScreen()">Back</button>
+    <div class="joinGame">
+        <div class="right-panel">
+            <h2>PLAYERS INSIDE THIS LOBBY</h2>
+            <ul id="lobby-player-list">
+                <!-- Players will be dynamically listed here -->
+            </ul>
+            <button id="play-button-join">PLAY</button>
+            <button onclick="showInitialScreen()">Back</button>
+        </div>
     </div>
-  </div>
 
-  <div id="winner-popup" class="modal">
-    <div class="modal-content">
-      <h2>Congratulations!</h2>
-      <p id="winner-message"></p>
+    <div id="winner-popup" class="modal">
+        <div class="modal-content">
+            <h2>Congratulations!</h2>
+            <p id="winner-message"></p>
+        </div>
     </div>
-  </div>
-
-  <script src="script.js"></script>
+    <div id="timer" style="display: none;">00:00</div>
+    <script src="script.js"></script>
 </body>
 
 </html>

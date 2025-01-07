@@ -5,6 +5,16 @@ let playerX, playerY, velocityX = 0, velocityY = 0, speed = 2;
 let isInCreateMode = false;
 let otherPlayers = [];
 let gameIsOver = false; // Flag to track if the game is over
+let timer = null; // Timer interval
+let elapsedTime = 0; // Total elapsed time in centiseconds (1/100s)
+
+// Function to format time as MM.SS
+function formatTime(time) {
+    const minutes = Math.floor(time / 6000);
+    const seconds = Math.floor((time % 6000) / 100);
+    const centiseconds = time % 100;
+    return `${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
+}
 
 function showRules(){
     const rules = document.getElementById("rulesBlock");
@@ -117,7 +127,18 @@ function createGameCanvas(player) {
     miniMapContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
     miniMapContainer.style.borderRadius = '5px';
    
-   
+    // **Added: Timer display**
+    const timerDisplay = document.createElement('div');
+    timerDisplay.id = 'timerDisplay';
+    timerDisplay.style.position = 'absolute';
+    timerDisplay.style.top = '10px';
+    timerDisplay.style.left = '10px';
+    timerDisplay.style.fontSize = '24px';
+    timerDisplay.style.fontWeight = 'bold';
+    timerDisplay.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    timerDisplay.style.padding = '5px';
+    timerDisplay.style.borderRadius = '5px';
+    document.body.appendChild(timerDisplay);
 
     const ctx = canvas.getContext('2d');
     const miniMapCtx = miniMapCanvas.getContext('2d');
@@ -210,8 +231,9 @@ function createGameCanvas(player) {
         
                 drawMiniMap();
         
-                // Check if the player "reaches" the finish line
+                // Check if the player reaches the finish line
                 if (!gameIsOver && roadOffsetY >= canvas.height - 50) {
+                    clearInterval(timer); // Stop the timer
                     socket.emit('playerWon', { username });
                 }
             }
@@ -226,6 +248,21 @@ function createGameCanvas(player) {
 
         gameLoop();
     };
+
+    // **Updated: Timer logic starts on movement**
+    document.addEventListener('keydown', (e) => {
+        if (!timer) {
+            timer = setInterval(() => {
+                elapsedTime++;
+                document.getElementById('timerDisplay').textContent = formatTime(elapsedTime);
+                if (elapsedTime >= 9999) {
+                    clearInterval(timer); // Stop timer at 99.99
+                    gameIsOver = true;
+                }
+            }, 10);
+        }
+        handleKeyMovement(e, true);
+    });
 
     // Listen for updates from the server about other players
     socket.on('updatePlayers', (players) => {
