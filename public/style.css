@@ -75,7 +75,7 @@ button:hover {
     text-align: center;
     border-radius: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-    font-size: 18px;
+    font-size: 10px;
     z-index: 1000; /* Ensure it's above other content */
     position: relative; /* To position the close button inside */
 }

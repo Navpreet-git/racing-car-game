@@ -6,7 +6,6 @@ let isInCreateMode = false;
 let otherPlayers = [];
 let gameIsOver = false; // Flag to track if the game is over
 
-
 function showRules(){
     const rules = document.getElementById("rulesBlock");
     if(rules.style.display === "none"){
@@ -91,6 +90,7 @@ function joinGameWithCode() {
     socket.on('lobbyUpdate', ({ players }) => updatePlayerList('lobby-player-list', players));
 }
 
+
 function createGameCanvas(player) {
     playerX = player.x;
     playerY = player.y;
@@ -116,6 +116,8 @@ function createGameCanvas(player) {
     miniMapContainer.style.border = '2px solid #000';
     miniMapContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
     miniMapContainer.style.borderRadius = '5px';
+   
+   
 
     const ctx = canvas.getContext('2d');
     const miniMapCtx = miniMapCanvas.getContext('2d');
@@ -126,35 +128,43 @@ function createGameCanvas(player) {
     const finishLineY = 50; // Y-coordinate of the finish line
 
     carImg.onload = () => {
+        let roadOffsetY = 0; // Track road offset for scrolling
+
         function drawRoad() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
+        
             // Road dimensions
-            const roadWidth = canvas.width / 3; 
-            const roadX = (canvas.width - roadWidth) / 2; 
-
-            ctx.fillStyle = "#333"; 
+            const roadWidth = canvas.width / 3;
+            const roadX = (canvas.width - roadWidth) / 2;
+        
+            // Draw scrolling road
+            ctx.fillStyle = "#333";
             ctx.fillRect(roadX, 0, roadWidth, canvas.height);
-
-            // Draw finish line
-            ctx.fillStyle = "#FF0000"; // Gold color for finish line
-            ctx.fillRect(roadX, finishLineY, roadWidth, 10);
-
+        
             // Draw road markings
-            ctx.strokeStyle = "#fff"; 
+            ctx.strokeStyle = "#fff";
             ctx.lineWidth = 2;
-            for (let y = 0; y < canvas.height; y += 40) {
+            const lineHeight = 40; // Height of each dashed line
+            const gapHeight = 20; // Gap between dashed lines
+        
+            for (let y = roadOffsetY % (lineHeight + gapHeight); y < canvas.height; y += lineHeight + gapHeight) {
                 ctx.beginPath();
-                ctx.moveTo(roadX + roadWidth / 3, y); 
-                ctx.lineTo(roadX + roadWidth / 3, y + 20);
+                ctx.moveTo(roadX + roadWidth / 3, y);
+                ctx.lineTo(roadX + roadWidth / 3, y + lineHeight);
                 ctx.stroke();
-
+        
                 ctx.beginPath();
-                ctx.moveTo(roadX + (2 * roadWidth) / 3, y); 
-                ctx.lineTo(roadX + (2 * roadWidth) / 3, y + 20);
+                ctx.moveTo(roadX + (2 * roadWidth) / 3, y);
+                ctx.lineTo(roadX + (2 * roadWidth) / 3, y + lineHeight);
                 ctx.stroke();
             }
+        
+            // Draw finish line at the top
+            ctx.fillStyle = "#FF0000"; // Red color for finish line
+            ctx.fillRect(roadX, 50 - roadOffsetY, roadWidth, 10);
         }
+        
+        
 
         function drawMiniMap() {
             miniMapCtx.clearRect(0, 0, miniMapCanvas.width, miniMapCanvas.height);
@@ -167,7 +177,7 @@ function createGameCanvas(player) {
                 (canvas.width / 3) * scale,
                 0,
                 (canvas.width / 3) * scale,
-                miniMapCanvas.height
+                 miniMapCanvas.height
             );
 
             // Draw all players on the mini-map
@@ -185,21 +195,25 @@ function createGameCanvas(player) {
 
         function gameLoop() {
             if (!gameIsOver) {
+                // Update road offset for scrolling effect
+                roadOffsetY = (roadOffsetY + speed) % canvas.height;
                 if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
                     playerX += velocityX;
                 }
                 if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) {
                     playerY += velocityY;
                 }
-            }
+                drawRoad();
         
-            drawRoad();
-            ctx.drawImage(carImg, playerX, playerY, 50, 50);
-            drawMiniMap();
+                // Keep player fixed at the bottom and centered horizontally
+                ctx.drawImage(carImg, playerX, playerY, 50, 50);
         
-            // Check if the player crosses the finish line
-            if (!gameIsOver && playerY <= finishLineY) {
-                socket.emit('playerWon', { username });
+                drawMiniMap();
+        
+                // Check if the player "reaches" the finish line
+                if (!gameIsOver && roadOffsetY >= canvas.height - 50) {
+                    socket.emit('playerWon', { username });
+                }
             }
         
             requestAnimationFrame(gameLoop);
