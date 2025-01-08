@@ -127,7 +127,6 @@ function createGameCanvas(player) {
     miniMapContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
     miniMapContainer.style.borderRadius = '5px';
    
-    // **Added: Timer display**
     const timerDisplay = document.createElement('div');
     timerDisplay.id = 'timerDisplay';
     timerDisplay.style.position = 'absolute';
@@ -140,17 +139,16 @@ function createGameCanvas(player) {
     timerDisplay.style.borderRadius = '5px';
     document.body.appendChild(timerDisplay);
 
+
     const ctx = canvas.getContext('2d');
     const miniMapCtx = miniMapCanvas.getContext('2d');
 
     const carImg = new Image();
     carImg.src = '/images/car.png';
 
-    const finishLineY = 50; // Y-coordinate of the finish line
 
     carImg.onload = () => {
         let roadOffsetY = 0; // Track road offset for scrolling
-
         function drawRoad() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         
@@ -158,7 +156,7 @@ function createGameCanvas(player) {
             const roadWidth = canvas.width / 3;
             const roadX = (canvas.width - roadWidth) / 2;
         
-            // Draw scrolling road
+            // Draw road
             ctx.fillStyle = "#333";
             ctx.fillRect(roadX, 0, roadWidth, canvas.height);
         
@@ -167,8 +165,15 @@ function createGameCanvas(player) {
             ctx.lineWidth = 2;
             const lineHeight = 40; // Height of each dashed line
             const gapHeight = 20; // Gap between dashed lines
+            const totalRoadHeight = 1200; // Virtual height of the road
         
-            for (let y = roadOffsetY % (lineHeight + gapHeight); y < canvas.height; y += lineHeight + gapHeight) {
+            // Calculate the visible starting position of the dashed lines
+            const visibleStartY = -roadOffsetY % (lineHeight + gapHeight);
+        
+            for (let y = visibleStartY; y < canvas.height; y += lineHeight + gapHeight) {
+                const virtualY = totalRoadHeight - roadOffsetY + y; // Adjust virtual Y-coordinate for downward motion
+                if (virtualY <= 0) continue; // Stop drawing past the top of the virtual road
+        
                 ctx.beginPath();
                 ctx.moveTo(roadX + roadWidth / 3, y);
                 ctx.lineTo(roadX + roadWidth / 3, y + lineHeight);
@@ -180,10 +185,15 @@ function createGameCanvas(player) {
                 ctx.stroke();
             }
         
-            // Draw finish line at the top
-            ctx.fillStyle = "#FF0000"; // Red color for finish line
-            ctx.fillRect(roadX, 50 - roadOffsetY, roadWidth, 10);
+            // Draw finish line at the top of the virtual road
+            if (roadOffsetY <= totalRoadHeight - canvas.height) {
+                const finishLineVisibleY = canvas.height - (totalRoadHeight - roadOffsetY);
+                ctx.fillStyle = "#FF0000"; // Red color for finish line
+                ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+            }
         }
+        
+        
         
         
 
@@ -213,33 +223,60 @@ function createGameCanvas(player) {
                 );
             });
         }
+        let finishLineDrawn = false; // Flag to ensure finish line is drawn only once
 
         function gameLoop() {
             if (!gameIsOver) {
-                // Update road offset for scrolling effect
-                roadOffsetY = (roadOffsetY + speed) % canvas.height;
+                const finishLineVisibleY = canvas.height - (1200 - roadOffsetY);
+        
+                // Stop road scrolling if the finish line is visible
+                if (finishLineVisibleY <= 0) {
+                    roadOffsetY = (roadOffsetY + speed) % 1200;
+                }
+        
+                // Update player position based on velocity
                 if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
                     playerX += velocityX;
                 }
                 if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) {
                     playerY += velocityY;
                 }
+        
+                // Redraw road and car
                 drawRoad();
-        
-                // Keep player fixed at the bottom and centered horizontally
                 ctx.drawImage(carImg, playerX, playerY, 50, 50);
-        
                 drawMiniMap();
         
-                // Check if the player reaches the finish line
-                if (!gameIsOver && roadOffsetY >= canvas.height - 50) {
-                    clearInterval(timer); // Stop the timer
+                // Draw the finish line only once when it's visible
+                if (!finishLineDrawn && finishLineVisibleY <= 0) {
+                    ctx.fillStyle = "#FF0000"; // Red finish line
+                    ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+                    finishLineDrawn = true; // Mark the finish line as drawn
+                }
+        
+                // Ensure the finish line stays visible
+                if (finishLineDrawn) {
+                    ctx.fillStyle = "#FF0000"; // Red finish line
+                    ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+                }
+        
+                // Check if the car reaches the finish line
+                if (
+                    finishLineVisibleY <= playerY + 50 && // Finish line is at or below the car's bottom edge
+                    finishLineVisibleY >= playerY // Finish line is at or above the car's top edge
+                ) {
+
                     socket.emit('playerWon', { username });
+                    clearInterval(timer); // Stop the timer
+
+                    gameIsOver = true; // Mark the game as over
                 }
             }
         
+            // Continue the game loop
             requestAnimationFrame(gameLoop);
         }
+          
 
         const roadWidth = canvas.width / 3;
         const roadX = (canvas.width - roadWidth) / 2;
@@ -249,7 +286,6 @@ function createGameCanvas(player) {
         gameLoop();
     };
 
-    // **Updated: Timer logic starts on movement**
     document.addEventListener('keydown', (e) => {
         if (!timer) {
             timer = setInterval(() => {
