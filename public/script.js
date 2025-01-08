@@ -165,15 +165,12 @@ function createGameCanvas(player) {
             ctx.lineWidth = 2;
             const lineHeight = 40; // Height of each dashed line
             const gapHeight = 20; // Gap between dashed lines
-            const totalRoadHeight = 1200; // Virtual height of the road
         
-            // Calculate the visible starting position of the dashed lines
-            const visibleStartY = -roadOffsetY % (lineHeight + gapHeight);
+            // Calculate the starting position of the dashed lines
+            const startY = roadOffsetY % (lineHeight + gapHeight);
         
-            for (let y = visibleStartY; y < canvas.height; y += lineHeight + gapHeight) {
-                const virtualY = totalRoadHeight - roadOffsetY + y; // Adjust virtual Y-coordinate for downward motion
-                if (virtualY <= 0) continue; // Stop drawing past the top of the virtual road
-        
+            // Draw the dashed lines
+            for (let y = startY - (lineHeight + gapHeight); y < canvas.height; y += lineHeight + gapHeight) {
                 ctx.beginPath();
                 ctx.moveTo(roadX + roadWidth / 3, y);
                 ctx.lineTo(roadX + roadWidth / 3, y + lineHeight);
@@ -185,13 +182,14 @@ function createGameCanvas(player) {
                 ctx.stroke();
             }
         
-            // Draw finish line at the top of the virtual road
-            if (roadOffsetY <= totalRoadHeight - canvas.height) {
-                const finishLineVisibleY = canvas.height - (totalRoadHeight - roadOffsetY);
-                ctx.fillStyle = "#FF0000"; // Red color for finish line
-                ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+            // Draw the finish line if it should appear
+            if (roadOffsetY >= 3000 - canvas.height) {
+                const finishLineY = canvas.height - (roadOffsetY - (3000 - canvas.height));
+                ctx.fillStyle = "#FF0000"; // Red finish line
+                ctx.fillRect(roadX, finishLineY, roadWidth, 10);
             }
         }
+        
         
         
         
@@ -227,11 +225,11 @@ function createGameCanvas(player) {
 
         function gameLoop() {
             if (!gameIsOver) {
-                const finishLineVisibleY = canvas.height - (1200 - roadOffsetY);
+                const finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
         
                 // Stop road scrolling if the finish line is visible
                 if (finishLineVisibleY <= 0) {
-                    roadOffsetY = (roadOffsetY + speed) % 1200;
+                    roadOffsetY = (roadOffsetY + speed) % 3000;
                 }
         
                 // Update player position based on velocity
