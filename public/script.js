@@ -7,6 +7,39 @@ let otherPlayers = [];
 let gameIsOver = false; // Flag to track if the game is over
 let timer = null; // Timer interval
 let elapsedTime = 0; // Total elapsed time in centiseconds (1/100s)
+let obstacles = [];
+let isCarMoving = false; // Flag to check if car has started moving
+
+// Obstacle images
+const obstacleImages = [
+    '/images/obstacles/splash1.png',
+    '/images/obstacles/splash2.png',
+    '/images/obstacles/splash3.png',
+    '/images/obstacles/landMine.png',
+];
+const obstacleObjects = [];
+
+// Load obstacle images
+obstacleImages.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    obstacleObjects.push(img);
+});
+function generateObstacles(count) {
+    console.log('Generating obstacles');
+    for (let i = 0; i < count; i++) {
+        const xValues = [280, 380, 470];
+        const obstacle = {
+            x: xValues[Math.floor(Math.random() * xValues.length)],  // Randomly select one of 280, 380, or 470
+            y: Math.random() * 3000 - 3000,
+            width: 50,
+            height: 50,
+            img: obstacleObjects[Math.floor(Math.random() * obstacleObjects.length)],
+        };
+        console.log(`Obstacle ${i}: ${obstacle.x}, ${obstacle.y} , ${obstacle.img.src}`);
+        obstacles.push(obstacle);
+    }
+}
 
 // Function to format time as MM.SS
 function formatTime(time) {
@@ -101,6 +134,7 @@ function joinGameWithCode() {
 }
 
 
+
 function createGameCanvas(player) {
     playerX = player.x;
     playerY = player.y;
@@ -148,50 +182,54 @@ function createGameCanvas(player) {
 
 
     carImg.onload = () => {
+        generateObstacles(20);
+
         let roadOffsetY = 0; // Track road offset for scrolling
         function drawRoad() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
+
             // Road dimensions
             const roadWidth = canvas.width / 3;
             const roadX = (canvas.width - roadWidth) / 2;
-        
+
             // Draw road
             ctx.fillStyle = "#333";
             ctx.fillRect(roadX, 0, roadWidth, canvas.height);
-        
-            // Draw road markings
+
+            // Draw dashed lines
             ctx.strokeStyle = "#fff";
             ctx.lineWidth = 2;
-            const lineHeight = 40; // Height of each dashed line
-            const gapHeight = 20; // Gap between dashed lines
-        
-            // Calculate the starting position of the dashed lines
+            const lineHeight = 40;
+            const gapHeight = 20;
             const startY = roadOffsetY % (lineHeight + gapHeight);
-        
-            // Draw the dashed lines
+
             for (let y = startY - (lineHeight + gapHeight); y < canvas.height; y += lineHeight + gapHeight) {
                 ctx.beginPath();
                 ctx.moveTo(roadX + roadWidth / 3, y);
                 ctx.lineTo(roadX + roadWidth / 3, y + lineHeight);
                 ctx.stroke();
-        
+
                 ctx.beginPath();
                 ctx.moveTo(roadX + (2 * roadWidth) / 3, y);
                 ctx.lineTo(roadX + (2 * roadWidth) / 3, y + lineHeight);
                 ctx.stroke();
             }
-        
-            // Draw the finish line if it should appear
-            if (roadOffsetY >= 3000 - canvas.height) {
-                const finishLineY = canvas.height - (roadOffsetY - (3000 - canvas.height));
-                ctx.fillStyle = "#FF0000"; // Red finish line
-                ctx.fillRect(roadX, finishLineY, roadWidth, 10);
-            }
         }
+
         
+       
+        function drawObstacles() {
+            obstacles.forEach((obstacle, index) => {
+                const adjustedY = obstacle.y + roadOffsetY;
         
-        
+                // Check if obstacle is within the visible area
+                if (adjustedY + obstacle.height > 0 && adjustedY < canvas.height) {
+                    ctx.drawImage(obstacle.img, obstacle.x, adjustedY, obstacle.width, obstacle.height);
+                } else {
+                    console.log(`Obstacle ${index} out of view: ${obstacle.x}, ${adjustedY}`);
+                }
+            });
+        }
         
         
 
@@ -225,11 +263,13 @@ function createGameCanvas(player) {
 
         function gameLoop() {
             if (!gameIsOver) {
-                const finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
+                let finishLineVisibleY;
+                if (isCarMoving) {
+                 finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
         
-                // Stop road scrolling if the finish line is visible
-                if (finishLineVisibleY <= 0) {
-                    roadOffsetY = (roadOffsetY + speed) % 3000;
+                    if (finishLineVisibleY <= 0) {
+                        roadOffsetY = (roadOffsetY + speed) % 3000;
+                    }
                 }
         
                 // Update player position based on velocity
@@ -240,10 +280,15 @@ function createGameCanvas(player) {
                     playerY += velocityY;
                 }
         
-                // Redraw road and car
+
+        
                 drawRoad();
+                drawObstacles();
+
                 ctx.drawImage(carImg, playerX, playerY, 50, 50);
                 drawMiniMap();
+
+
         
                 // Draw the finish line only once when it's visible
                 if (!finishLineDrawn && finishLineVisibleY <= 0) {
@@ -306,38 +351,37 @@ function createGameCanvas(player) {
 
 
 function handleKeyMovement(e, isKeyDown) {
-    if (e.key === 'ArrowUp') velocityY = isKeyDown ? -speed : 0;
-    if (e.key === 'ArrowDown') velocityY = isKeyDown ? speed : 0;
-    if (e.key === 'ArrowLeft') velocityX = isKeyDown ? -speed : 0;
-    if (e.key === 'ArrowRight') velocityX = isKeyDown ? speed : 0;
+    if (e.key === 'ArrowUp') {
+        velocityY = isKeyDown ? -speed : 0;
+        if (isKeyDown && !isCarMoving) {
+            isCarMoving = true; // Car starts moving
+        }
+    }
+    if (e.key === 'ArrowDown') {
+        velocityY = isKeyDown ? speed : 0;
+        if (isKeyDown && !isCarMoving) {
+            isCarMoving = true; // Car starts moving
+        }
+    }
+    if (e.key === 'ArrowLeft') {
+        velocityX = isKeyDown ? -speed : 0;
+        if (isKeyDown && !isCarMoving) {
+            isCarMoving = true; // Car starts moving
+        }
+    }
+    if (e.key === 'ArrowRight') {
+        velocityX = isKeyDown ? speed : 0;
+        if (isKeyDown && !isCarMoving) {
+            isCarMoving = true; // Car starts moving
+        }
+    }
 
     if (isKeyDown) {
         socket.emit('playerMove', { x: playerX, y: playerY });
     }
 }
-document.getElementById('play-button-join').addEventListener('click', () =>{ 
 
-    console.log('isInCreateMode,',isInCreateMode)
 
-    const gameCode = document.getElementById('game-code-input').value.trim();
-
-    socket.emit('startGame', gameCode);
-
-    socket.on('gameStarted', (player) => {
-        console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
-
-        document.querySelector('.initialScreen').style.display = 'none';
-        document.querySelector('.createGame').style.display = 'none';
-        document.querySelector('.joinGame').style.display = 'none';
-        document.getElementById('game-code-box').style.display = 'none';
-        document.getElementById('player-list').style.display = 'none';
-
-        createGameCanvas(player);
-
-        document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
-        document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
-    });
-});
 document.getElementById('play-button').addEventListener('click', () => {
     
         console.log('isInCreateMode,',isInCreateMode)
