@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const host = '0.0.0.0'; // Listen on all interfaces
 
 const app = express();
 const server = http.createServer(app);
@@ -132,6 +133,6 @@ io.on('connection', (socket) => {
     });
 });
 
-server.listen(3000, () => {
-    console.log('Server running on http://localhost:3000');
+server.listen(port, host, () => {
+    console.log(`Server running at http://${host}:${port}/`);
 });
