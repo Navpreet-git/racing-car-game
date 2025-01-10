@@ -426,7 +426,9 @@ socket.on('gameOver', ({ winner }) => {
     const winnerPopup = document.getElementById('winner-popup');
     const winnerMessage = document.getElementById('winner-message');
     
-    winnerMessage.textContent = `${winner} has won the game!`;
+    const formattedTime = formatTime(elapsedTime);
+
+    winnerMessage.innerHTML = `${winner} has won the game!<br>Time: ${formattedTime}`;
 
     winnerPopup.style.display = 'block';
 });
