@@ -4,3 +4,8 @@ to install a specific library : npm install name_of_library
 to run the project : node server.js
 
 quando la macchina raggiunge il traguardo non compare a video il messaggio di vittoria
+
+Allow only the host to start the game, the host starts the game for everyone in the lobby … display a 3-2-1 countdown to show the car or directly the canvas
+
+COLLISION OF OBSTACLES 
+Add the players list on the left side of the canvas to make it look more appealing
