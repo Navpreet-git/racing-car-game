@@ -2,3 +2,5 @@
 the first time you clone the project do: npm i 
 to install a specific library : npm install name_of_library
 to run the project : node server.js
+
+quando la macchina raggiunge il traguardo non compare a video il messaggio di vittoria
