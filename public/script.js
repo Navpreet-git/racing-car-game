@@ -25,16 +25,15 @@ obstacleImages.forEach((src) => {
     img.src = src;
     obstacleObjects.push(img);
 });
-
 function generateObstacles(count) {
     console.log('Generating obstacles');
     for (let i = 0; i < count; i++) {
         const xValues = [280, 380, 470];
         const obstacle = {
-            x: xValues[Math.floor(Math.random() * xValues.length)],
+            x: xValues[Math.floor(Math.random() * xValues.length)],  // Randomly select one of 280, 380, or 470
             y: Math.random() * 3000 - 3000,
-            width: 30,
-            height: 30,
+            width: 50,
+            height: 50,
             img: obstacleObjects[Math.floor(Math.random() * obstacleObjects.length)],
         };
         console.log(`Obstacle ${i}: ${obstacle.x}, ${obstacle.y} , ${obstacle.img.src}`);
@@ -50,15 +49,14 @@ function formatTime(time) {
     return `${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
 }
 
-function showRules() {
+function showRules(){
     const rules = document.getElementById("rulesBlock");
-    if (rules.style.display === "none") {
+    if(rules.style.display === "none"){
         rules.style.display = "block";
-    } else {
+    } else{
         rules.style.display = "none";
     }
 }
-
 function toggleElementVisibility(elementId) {
     const element = document.getElementById(elementId);
     element.style.display = (element.style.display === "none" || element.style.display === "") ? "block" : "none";
@@ -122,7 +120,7 @@ function joinGameWithCode() {
 
     socket.emit('joinGame', { gameCode, username });
     isInCreateMode = false; // Flag for join game mode
-    console.log('isInCreateMode set to ,', isInCreateMode)
+    console.log('isInCreateMode set to ,' , isInCreateMode)
     socket.on('gameJoined', ({ success, message, gameCode }) => {
         if (success) {
             console.log(`Joined game with code: ${gameCode}`);
@@ -135,14 +133,7 @@ function joinGameWithCode() {
     socket.on('lobbyUpdate', ({ players }) => updatePlayerList('lobby-player-list', players));
 }
 
-function checkCollision(player, obstacle) {
-    return (
-        player.x < obstacle.x + obstacle.width &&
-        player.x + 50 > obstacle.x && // 50 is the player width
-        player.y < obstacle.y + obstacle.height &&
-        player.y + 50 > obstacle.y    // 50 is the player height
-    );
-}
+
 
 function createGameCanvas(player) {
     playerX = player.x;
@@ -169,7 +160,7 @@ function createGameCanvas(player) {
     miniMapContainer.style.border = '2px solid #000';
     miniMapContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
     miniMapContainer.style.borderRadius = '5px';
-
+   
     const timerDisplay = document.createElement('div');
     timerDisplay.id = 'timerDisplay';
     timerDisplay.style.position = 'absolute';
@@ -182,11 +173,13 @@ function createGameCanvas(player) {
     timerDisplay.style.borderRadius = '5px';
     document.body.appendChild(timerDisplay);
 
+
     const ctx = canvas.getContext('2d');
     const miniMapCtx = miniMapCanvas.getContext('2d');
 
     const carImg = new Image();
     carImg.src = '/images/car.png';
+
 
     carImg.onload = () => {
         generateObstacles(20);
@@ -223,57 +216,22 @@ function createGameCanvas(player) {
             }
         }
 
+        
+       
         function drawObstacles() {
-            obstacles.forEach((obstacle) => {
+            obstacles.forEach((obstacle, index) => {
                 const adjustedY = obstacle.y + roadOffsetY;
         
                 // Check if obstacle is within the visible area
                 if (adjustedY + obstacle.height > 0 && adjustedY < canvas.height) {
                     ctx.drawImage(obstacle.img, obstacle.x, adjustedY, obstacle.width, obstacle.height);
-        
-                    // Check for collision
-                    if (checkCollision({ x: playerX, y: playerY }, { ...obstacle, y: adjustedY })) {
-                        gameIsOver = true;
-                        clearInterval(timer); // Stop the timer
-        
-                        // Emit game over event to server
-                        socket.emit('gameOver', { winner: username });
-        
-                        // Create modal if it doesn't exist
-                        let gameOverModal = document.getElementById('gameOverModal');
-                        if (!gameOverModal) {
-                            gameOverModal = document.createElement('div');
-                            gameOverModal.id = 'gameOverModal';
-                            gameOverModal.style.position = 'fixed';
-                            gameOverModal.style.top = '50%';
-                            gameOverModal.style.left = '50%';
-                            gameOverModal.style.transform = 'translate(-50%, -50%)';
-                            gameOverModal.style.background = 'red';
-                            gameOverModal.style.color = 'white';
-                            gameOverModal.style.padding = '20px';
-                            gameOverModal.style.borderRadius = '10px';
-                            gameOverModal.style.textAlign = 'center';
-                            gameOverModal.style.zIndex = '1000';
-                            gameOverModal.style.display = 'none'; // Initially hidden
-                            gameOverModal.innerHTML = `
-                                <span style="font-size: 24px; font-weight: bold;">&#10060; Game Over!</span>
-                                <p>You collided with an obstacle.</p>
-                                <button id="returnHomeButton" style="margin-top: 10px; padding: 10px 20px; background: white; color: red; border: none; border-radius: 5px; cursor: pointer;">Return Home</button>
-                            `;
-                            document.body.appendChild(gameOverModal);
-        
-                            // Add event listener to the button
-                            const returnHomeButton = document.getElementById('returnHomeButton');
-                            returnHomeButton.addEventListener('click', returnHome);
-                        }
-        
-                        // Show the modal
-                        gameOverModal.style.display = 'block';
-                        return;
-                    }
+                } else {
+                    console.log(`Obstacle ${index} out of view: ${obstacle.x}, ${adjustedY}`);
                 }
             });
         }
+        
+        
 
         function drawMiniMap() {
             miniMapCtx.clearRect(0, 0, miniMapCanvas.width, miniMapCanvas.height);
@@ -286,7 +244,7 @@ function createGameCanvas(player) {
                 (canvas.width / 3) * scale,
                 0,
                 (canvas.width / 3) * scale,
-                miniMapCanvas.height
+                 miniMapCanvas.height
             );
 
             // Draw all players on the mini-map
@@ -302,30 +260,115 @@ function createGameCanvas(player) {
             });
         }
 
+        function checkCollision(playerX, playerY, obstacle) {
+            return (
+                playerX < obstacle.x + obstacle.width &&
+                playerX + 50 > obstacle.x && 
+                playerY < obstacle.y + obstacle.height &&
+                playerY + 50 > obstacle.y 
+            );
+        }
+
+        let finishLineDrawn = false; // Flag to ensure finish line is drawn only once
+
+        let collisionDelay = 0; 
+
+        
         function gameLoop() {
             if (!gameIsOver) {
-                roadOffsetY = (roadOffsetY + speed) % 3000;
-
-                // Update player position based on velocity
-                if (playerX + velocityX >= canvas.width / 3 && playerX + velocityX <= (canvas.width * 2) / 3 - 50) {
-                    playerX += velocityX;
+                let finishLineVisibleY;
+                if (isCarMoving) {
+                    finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
+        
+                    if (finishLineVisibleY <= 0) {
+                        roadOffsetY = (roadOffsetY + speed) % 3000;
+                    }
                 }
-                if (playerY + velocityY >= 0 && playerY + velocityY <= canvas.height - 50) {
-                    playerY += velocityY;
+        
+                let collisionDetected = false;
+                let adjustedVelocityX = velocityX;
+                let adjustedVelocityY = velocityY;
+        
+                obstacles.forEach(obstacle => {
+                    const adjustedY = obstacle.y + roadOffsetY;
+        
+                    
+                    if (
+                        playerX < obstacle.x + obstacle.width &&
+                        playerX + 50 > obstacle.x && 
+                        playerY < adjustedY + obstacle.height &&
+                        playerY + 50 > adjustedY   
+                    ) {
+                        collisionDetected = true;
+        
+                        if (velocityX > 0 && playerX + 50 > obstacle.x) { 
+                            adjustedVelocityX = 0;
+                        }
+                        if (velocityX < 0 && playerX < obstacle.x + obstacle.width) { 
+                            adjustedVelocityX = 0;
+                        }
+                        if (velocityY > 0 && playerY + 50 > adjustedY) { 
+                            adjustedVelocityY = 0;
+                        }
+                        if (velocityY < 0 && playerY < adjustedY + obstacle.height) { 
+                            adjustedVelocityY = 0;
+                        }
+                    }
+                });
+        
+              
+                const roadLeftBoundary = canvas.width / 3;
+                const roadRightBoundary = (canvas.width * 2) / 3 - 50;
+        
+                if (
+                    playerX + adjustedVelocityX >= roadLeftBoundary &&
+                    playerX + adjustedVelocityX <= roadRightBoundary
+                ) {
+                    playerX += adjustedVelocityX;
+                } else {
+                    
+                    playerX = Math.max(roadLeftBoundary, Math.min(playerX, roadRightBoundary));
                 }
-
+        
+                if (playerY + adjustedVelocityY >= 0 && playerY + adjustedVelocityY <= canvas.height - 50) {
+                    playerY += adjustedVelocityY;
+                }
+        
                 drawRoad();
                 drawObstacles();
+        
                 ctx.drawImage(carImg, playerX, playerY, 50, 50);
                 drawMiniMap();
+        
+            
+                if (!finishLineDrawn && finishLineVisibleY <= 0) {
+                    ctx.fillStyle = "#FF0000"; 
+                    ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+                    finishLineDrawn = true;
+                }
+        
+                
+                if (finishLineDrawn) {
+                    ctx.fillStyle = "#FF0000"; 
+                    ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+                }
+        
+              
+                if (
+                    finishLineVisibleY <= playerY + 50 && 
+                    finishLineVisibleY >= playerY 
+                ) {
+                    socket.emit('playerWon', { username });
+                    clearInterval(timer);
+                    gameIsOver = true; 
+                }
             }
-
-            // Continue the game loop
-
+        
+            
             requestAnimationFrame(gameLoop);
         }
-          
-
+        
+        
         const roadWidth = canvas.width / 3;
         const roadX = (canvas.width - roadWidth) / 2;
         playerX = roadX + roadWidth / 2 - 25; // Centered in the road's middle lane
@@ -461,4 +504,4 @@ socket.on('gameOver', ({ winner }) => {
     winnerMessage.innerHTML = `${winner} has won the game!<br>Time: ${formattedTime}`;
 
     winnerPopup.style.display = 'block';
-});
+}); 
