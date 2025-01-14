@@ -341,7 +341,7 @@ function createGameCanvas(player) {
                 ctx.drawImage(carImg, playerX, playerY, 50, 50);
                 drawMiniMap();
         
-                ctx.fillStyle = "#0000ff"; // Blue color for the text
+                ctx.fillStyle = "#0000ff"; // Blue color for the username
                 ctx.font = "24px Arial";
                 ctx.fillText(username, 10, 30);
 
