@@ -1,3 +1,64 @@
+const socket = io();
+const canvas = document.createElement('canvas');
+let username = "";
+let playerX, playerY, velocityX = 0, velocityY = 0, speed = 2;
+let isInCreateMode = false;
+let otherPlayers = [];
+let gameIsOver = false; // Flag to track if the game is over
+let timer = null; // Timer interval
+let elapsedTime = 0; // Total elapsed time in centiseconds (1/100s)
+let obstacles = [];
+let isCarMoving = false; // Flag to check if car has started moving
+let pedalPressed = null; // Track which pedal is pressed
+let steeringAngle = 0; // Steering wheel angle
+let mouseIsPressed = false; // To track mouse press state
+
+const volante = new Image();
+    volante.src = '/images/volante.png';
+const gasPedal = new Image();
+    gasPedal.src = '/images/pedal_gas.png'; 
+const brakePedal = new Image();
+    brakePedal.src = '/images/pedal_stop.png';
+
+    // Obstacle images
+const obstacleImages = [
+    '/images/obstacles/splash1.png',
+    '/images/obstacles/splash2.png',
+    '/images/obstacles/splash3.png',
+    '/images/obstacles/landMine.png',
+];
+const obstacleObjects = [];
+
+// Load obstacle images
+obstacleImages.forEach((src) => {
+    const img = new Image();
+    img.src = src;
+    obstacleObjects.push(img);
+});
+function generateObstacles(count) {
+    console.log('Generating obstacles');
+    for (let i = 0; i < count; i++) {
+        const xValues = [280, 380, 470];
+        const obstacle = {
+            x: xValues[Math.floor(Math.random() * xValues.length)],  // Randomly select one of 280, 380, or 470
+            y: Math.random() * 3000 - 3000,
+            width: 50,
+            height: 50,
+            img: obstacleObjects[Math.floor(Math.random() * obstacleObjects.length)],
+        };
+        console.log(`Obstacle ${i}: ${obstacle.x}, ${obstacle.y} , ${obstacle.img.src}`);
+        obstacles.push(obstacle);
+    }
+}
+
+// Function to format time as MM.SS
+function formatTime(time) {
+    const minutes = Math.floor(time / 6000);
+    const seconds = Math.floor((time % 6000) / 100);
+    const centiseconds = time % 100;
+    return `${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
+}
+
 function showRules(){
     const rules = document.getElementById("rulesBlock");
     if(rules.style.display === "none"){
@@ -6,13 +67,485 @@ function showRules(){
         rules.style.display = "none";
     }
 }
-
-function joinGame(){
-    window.location.href = "" ; // name of file with winmdow of join game
+function toggleElementVisibility(elementId) {
+    const element = document.getElementById(elementId);
+    element.style.display = (element.style.display === "none" || element.style.display === "") ? "block" : "none";
 }
 
-function createGame(){
-    window.location.href = "" ; // name of file with window of game creation
+function updatePlayerList(playerListId, players) {
+    const playerList = document.getElementById(playerListId);
+    playerList.innerHTML = ""; // Clear current list
+    players.forEach(player => {
+        const li = document.createElement('li');
+        li.textContent = player.username;
+        playerList.appendChild(li);
+    });
+}
+
+function handleUsernameInput() {
+    username = document.querySelector('.usernameInput').value.trim();
+    if (!username) {
+        alert("Please enter a username!");
+        return false;
+    }
+    return true;
+}
+
+function createGame() {
+    if (!handleUsernameInput()) return;
+
+    socket.emit('createGame', username);
+    isInCreateMode = true; // Flag for create game mode
+
+    socket.on('gameCreated', ({ gameCode }) => {
+        console.log(`Game created with code: ${gameCode}`);
+        document.querySelector('.initialScreen').style.display = 'none';
+        document.querySelector('.createGame').style.display = 'block';
+        document.querySelector('.joinGame').style.display = 'none';
+        document.getElementById('game-code-box').textContent = gameCode;
+    });
+
+    socket.on('lobbyUpdate', ({ players }) => updatePlayerList('player-list', players));
+}
+
+function joinGame() {
+    if (!handleUsernameInput()) return;
+
+    document.querySelector('.initialScreen').style.display = 'none';
+    document.querySelector('.createGame').style.display = 'none';
+    document.querySelector('.joinGame').style.display = 'block';
+}
+
+function joinGameWithCode() {
+    const gameCode = document.getElementById('game-code-input').value.trim();
+    if (!handleUsernameInput()) return;
+
+    document.querySelector('.initialScreen').style.display = 'none';
+    document.querySelector('.createGame').style.display = 'none';
+    document.querySelector('.joinGame').style.display = 'block';
+    if (!gameCode) {
+        alert("Please enter a game code!");
+        return;
+    }
+
+    socket.emit('joinGame', { gameCode, username });
+    isInCreateMode = false; // Flag for join game mode
+    console.log('isInCreateMode set to ,' , isInCreateMode)
+    socket.on('gameJoined', ({ success, message, gameCode }) => {
+        if (success) {
+            console.log(`Joined game with code: ${gameCode}`);
+            document.getElementById('lobby-player-list').innerHTML = "";
+        } else {
+            alert(message || "Unable to join the game.");
+        }
+    });
+
+    socket.on('lobbyUpdate', ({ players }) => updatePlayerList('lobby-player-list', players));
+}
+
+
+
+function createGameCanvas(player) {
+    playerX = player.x;
+    playerY = player.y;
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'gameCanvas';
+    canvas.width = 800;
+    canvas.height = 600;
+    document.body.appendChild(canvas);
+
+    const miniMapCanvas = document.createElement('canvas');
+    miniMapCanvas.id = 'miniMapCanvas';
+    miniMapCanvas.width = 200;
+    miniMapCanvas.height = 150;
+    const miniMapContainer = document.createElement('div');
+    miniMapContainer.id = 'miniMapContainer';
+    miniMapContainer.appendChild(miniMapCanvas);
+    document.body.appendChild(miniMapContainer);
+
+    // MiniMap styling
+    miniMapContainer.style.position = 'absolute';
+    miniMapContainer.style.right = '350px';
+    miniMapContainer.style.border = '2px solid #000';
+    miniMapContainer.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    miniMapContainer.style.borderRadius = '5px';
+   
+    const timerDisplay = document.createElement('div');
+    timerDisplay.id = 'timerDisplay';
+    timerDisplay.style.position = 'absolute';
+    timerDisplay.style.top = '10px';
+    timerDisplay.style.left = '10px';
+    timerDisplay.style.fontSize = '24px';
+    timerDisplay.style.fontWeight = 'bold';
+    timerDisplay.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+    timerDisplay.style.padding = '5px';
+    timerDisplay.style.borderRadius = '5px';
+    document.body.appendChild(timerDisplay);
+    
+    const gasPedalX = 50;
+    const gasPedalY = canvas.height - 150;
+    const brakePedalX = 150;
+    const brakePedalY = canvas.height - 150;
+    const volanteX = 80;
+    const volanteY = canvas.height - 300;
+
+
+    const ctx = canvas.getContext('2d');
+    const miniMapCtx = miniMapCanvas.getContext('2d');
+
+    const carImg = new Image();
+    carImg.src = '/images/car.png';
+
+
+    carImg.onload = () => {
+        generateObstacles(20);
+
+        let roadOffsetY = 0; // Track road offset for scrolling
+        function drawRoad() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Road dimensions
+            const roadWidth = canvas.width / 3;
+            const roadX = (canvas.width - roadWidth) / 2;
+
+            // Draw road
+            ctx.fillStyle = "#333";
+            ctx.fillRect(roadX, 0, roadWidth, canvas.height);
+
+            // Draw dashed lines
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2;
+            const lineHeight = 40;
+            const gapHeight = 20;
+            const startY = roadOffsetY % (lineHeight + gapHeight);
+
+            for (let y = startY - (lineHeight + gapHeight); y < canvas.height; y += lineHeight + gapHeight) {
+                ctx.beginPath();
+                ctx.moveTo(roadX + roadWidth / 3, y);
+                ctx.lineTo(roadX + roadWidth / 3, y + lineHeight);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(roadX + (2 * roadWidth) / 3, y);
+                ctx.lineTo(roadX + (2 * roadWidth) / 3, y + lineHeight);
+                ctx.stroke();
+            }
+        }
+
+        function drawGameElements() {
+            // Draw pedals and steering wheel
+            ctx.drawImage(gasPedal, gasPedalX, gasPedalY, 80, 100);
+            ctx.drawImage(brakePedal, brakePedalX, brakePedalY, 80, 100);
+            ctx.drawImage(volante, volanteX, volanteY, 120, 120);
+        
+            // Apply steering angle rotation to volante (if needed)
+            ctx.save();
+            ctx.translate(volanteX + 60, volanteY + 60); // Move to center of volante
+            ctx.rotate((steeringAngle * Math.PI) / 180); // Apply rotation based on steering angle
+            ctx.drawImage(volante, -60, -60, 120, 120); // Draw the rotated volante
+            ctx.restore();
+        
+            // Move the car based on velocities (vertical and horizontal)
+            playerX += velocityX;
+            playerY += velocityY;
+        
+            // Draw the car (or other game elements)
+            ctx.drawImage(carImg, playerX, playerY, 50, 50);
+        }
+
+        canvas.addEventListener('mousedown', (event) => {
+            mouseIsPressed = true;
+            handleMouseMovement(event, true); // Mouse pressed down
+        });
+        
+        canvas.addEventListener('mouseup', (event) => {
+            mouseIsPressed = false;
+            handleMouseMovement(event, false); // Mouse released
+        });
+       
+        function drawObstacles() {
+            obstacles.forEach((obstacle, index) => {
+                const adjustedY = obstacle.y + roadOffsetY;
+        
+                // Check if obstacle is within the visible area
+                if (adjustedY + obstacle.height > 0 && adjustedY < canvas.height) {
+                    ctx.drawImage(obstacle.img, obstacle.x, adjustedY, obstacle.width, obstacle.height);
+                } else {
+                    console.log(`Obstacle ${index} out of view: ${obstacle.x}, ${adjustedY}`);
+                }
+            });
+        }
+        
+        
+
+        function drawMiniMap() {
+            miniMapCtx.clearRect(0, 0, miniMapCanvas.width, miniMapCanvas.height);
+
+            const scale = miniMapCanvas.width / canvas.width;
+
+            // Draw the road on the mini-map
+            miniMapCtx.fillStyle = "#333";
+            miniMapCtx.fillRect(
+                (canvas.width / 3) * scale,
+                0,
+                (canvas.width / 3) * scale,
+                 miniMapCanvas.height
+            );
+
+            // Draw all players on the mini-map
+            Object.keys(otherPlayers).forEach(playerId => {
+                const { x, y, username: playerUsername } = otherPlayers[playerId];
+                miniMapCtx.fillStyle = playerUsername === username ? "red" : "blue";
+                miniMapCtx.fillRect(
+                    x * scale,
+                    y * scale,
+                    10, // Size of player on mini-map
+                    10
+                );
+            });
+        }
+
+        function checkCollision(playerX, playerY, obstacle) {
+            return (
+                playerX < obstacle.x + obstacle.width &&
+                playerX + 50 > obstacle.x && 
+                playerY < obstacle.y + obstacle.height &&
+                playerY + 50 > obstacle.y 
+            );
+        }
+
+        let finishLineDrawn = false; // Flag to ensure finish line is drawn only once
+
+        let collisionDelay = 0; 
+
+        
+        function gameLoop() {
+            if (!gameIsOver) {
+                let finishLineVisibleY;
+                if (isCarMoving) {
+                    finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
+        
+                    if (finishLineVisibleY <= 0) {
+                        roadOffsetY = (roadOffsetY + speed) % 3000;
+                    }
+                }
+        
+                let collisionDetected = false;
+                let adjustedVelocityX = velocityX;
+                let adjustedVelocityY = velocityY;
+        
+                obstacles.forEach(obstacle => {
+                    const adjustedY = obstacle.y + roadOffsetY;
+        
+                    
+                    if (
+                        playerX < obstacle.x + obstacle.width &&
+                        playerX + 50 > obstacle.x && 
+                        playerY < adjustedY + obstacle.height &&
+                        playerY + 50 > adjustedY   
+                    ) {
+                        collisionDetected = true;
+        
+                        if (velocityX > 0 && playerX + 50 > obstacle.x) { 
+                            adjustedVelocityX = 0;
+                        }
+                        if (velocityX < 0 && playerX < obstacle.x + obstacle.width) { 
+                            adjustedVelocityX = 0;
+                        }
+                        if (velocityY > 0 && playerY + 50 > adjustedY) { 
+                            adjustedVelocityY = 0;
+                        }
+                        if (velocityY < 0 && playerY < adjustedY + obstacle.height) { 
+                            adjustedVelocityY = 0;
+                        }
+                    }
+                });
+        
+              
+                const roadLeftBoundary = canvas.width / 3;
+                const roadRightBoundary = (canvas.width * 2) / 3 - 50;
+        
+                if (
+                    playerX + adjustedVelocityX >= roadLeftBoundary &&
+                    playerX + adjustedVelocityX <= roadRightBoundary
+                ) {
+                    playerX += adjustedVelocityX;
+                } else {
+                    
+                    playerX = Math.max(roadLeftBoundary, Math.min(playerX, roadRightBoundary));
+                }
+        
+                if (playerY + adjustedVelocityY >= 0 && playerY + adjustedVelocityY <= canvas.height - 50) {
+                    playerY += adjustedVelocityY;
+                }
+        
+                drawRoad();
+                drawObstacles();
+                drawGameElements();
+        
+                ctx.drawImage(carImg, playerX, playerY, 50, 50);
+                drawMiniMap();
+        
+            
+                if (!finishLineDrawn && finishLineVisibleY <= 0) {
+                    ctx.fillStyle = "#FF0000"; 
+                    ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+                    finishLineDrawn = true;
+                }
+        
+                
+                if (finishLineDrawn) {
+                    ctx.fillStyle = "#FF0000"; 
+                    ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
+                }
+        
+              
+                if (
+                    finishLineVisibleY <= playerY + 50 && 
+                    finishLineVisibleY >= playerY 
+                ) {
+                    socket.emit('playerWon', { username });
+                    clearInterval(timer);
+                    gameIsOver = true; 
+                }
+            }
+        
+            
+            requestAnimationFrame(gameLoop);
+        }
+        
+        
+        const roadWidth = canvas.width / 3;
+        const roadX = (canvas.width - roadWidth) / 2;
+        playerX = roadX + roadWidth / 2 - 25; // Centered in the road's middle lane
+        playerY = canvas.height - 60; 
+
+        gameLoop();
+    };
+
+    document.addEventListener('keydown', (e) => {
+        if (!timer) {
+            timer = setInterval(() => {
+                elapsedTime++;
+                document.getElementById('timerDisplay').textContent = formatTime(elapsedTime);
+                if (elapsedTime >= 9999) {
+                    clearInterval(timer); // Stop timer at 99.99
+                    gameIsOver = true;
+                }
+            }, 10);
+        }
+        handleKeyMovement(e, true);
+    });
+
+    // Listen for updates from the server about other players
+    socket.on('updatePlayers', (players) => {
+        otherPlayers = players; // Update the list of all players
+    });
+}
+
+function handleMouseMovement(event, isMouseDown) {
+    const rect = canvas.getBoundingClientRect();
+    const mouseX = event.clientX - rect.left;
+    const mouseY = event.clientY - rect.top;
+
+    // Check for gas pedal click
+    if (mouseX > gasPedalX && mouseX < gasPedalX + 80 && mouseY > gasPedalY && mouseY < gasPedalY + 100) {
+        if (isMouseDown) {
+            velocityY = -speed; // Move car forward when gas pedal is clicked
+            if (!isCarMoving) isCarMoving = true;
+        } else {
+            velocityY = 0; // Stop car when mouse is released
+        }
+    }
+
+    // Check for brake pedal click
+    if (mouseX > brakePedalX && mouseX < brakePedalX + 80 && mouseY > brakePedalY && mouseY < brakePedalY + 100) {
+        if (isMouseDown) {
+            velocityY = speed; // Move car backward when brake pedal is clicked
+            if (!isCarMoving) isCarMoving = true;
+        } else {
+            velocityY = 0; // Stop car when mouse is released
+        }
+    }
+
+    // Check if the mouse is inside the volante area to handle steering
+    if (mouseX > volanteX && mouseX < volanteX + 120 && mouseY > volanteY && mouseY < volanteY + 120) {
+        if (isMouseDown) {
+            // Calculate the angle of rotation based on mouse position relative to volante center
+            const centerX = volanteX + 60; // Volante center (horizontal)
+            const deltaX = mouseX - centerX; // Difference from center
+
+            // Calculate steering angle based on mouse movement (left or right)
+            steeringAngle = (deltaX / 60) * 30; // 60 is the range, 30 is the max steering angle
+            velocityX = Math.sign(deltaX) * speed; // Move the car left or right based on steering
+        }
+    }
+
+    if (!isMouseDown) {
+        velocityX = 0; // Stop horizontal movement when mouse is released
+    }
+
+    // Emit player move event
+    if (isMouseDown) {
+        socket.emit('playerMove', { x: playerX, y: playerY });
+    }
+}
+
+
+document.getElementById('play-button').addEventListener('click', () => {
+    
+        console.log('isInCreateMode,',isInCreateMode)
+        const gameCode = document.getElementById('game-code-box').textContent;
+
+        socket.emit('startGame', gameCode);
+
+        socket.on('gameStarted', (player) => {
+            console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
+
+            document.querySelector('.initialScreen').style.display = 'none';
+            document.querySelector('.createGame').style.display = 'none';
+            document.querySelector('.joinGame').style.display = 'none';
+            document.getElementById('game-code-box').style.display = 'none';
+            document.getElementById('player-list').style.display = 'none';
+
+            createGameCanvas(player);
+
+            document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
+            document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
+        });
+       
+    
+});
+
+document.getElementById('play-button-join').addEventListener('click', () => {
+    
+    console.log('isInCreateMode,',isInCreateMode)
+    const gameCode = document.getElementById('game-code-box').textContent;
+
+    socket.emit('startGame', gameCode);
+
+    socket.on('gameStarted', (player) => {
+        console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
+
+        document.querySelector('.initialScreen').style.display = 'none';
+        document.querySelector('.createGame').style.display = 'none';
+        document.querySelector('.joinGame').style.display = 'none';
+        document.getElementById('game-code-box').style.display = 'none';
+        document.getElementById('player-list').style.display = 'none';
+
+        createGameCanvas(player);
+
+        document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
+        document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
+    });
+   
+
+});
+function showInitialScreen() {
+    document.querySelector('.initialScreen').style.display = 'block';
+    document.querySelector('.createGame').style.display = 'none';
+    document.querySelector('.joinGame').style.display = 'none';
 }
 
 function replay(){
@@ -23,10 +556,15 @@ function returnHome(){
     window.location.href = "index.html";
 }
 
-function showWinner(winnerName) {
-    const winnerElement = document.getElementById('winnerName');
-    const nameSpan = document.getElementById('winner');
+socket.on('gameOver', ({ winner }) => {
+    gameIsOver = true; // Stop movement
+
+    const winnerPopup = document.getElementById('winner-popup');
+    const winnerMessage = document.getElementById('winner-message');
     
-    nameSpan.textContent = winnerName;
-    winnerElement.style.display = 'block';
-}
+    const formattedTime = formatTime(elapsedTime);
+
+    winnerMessage.innerHTML = `${winner} has won the game!<br>Time: ${formattedTime}`;
+
+    winnerPopup.style.display = 'block';
+}); 
