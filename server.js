@@ -79,16 +79,24 @@ io.on('connection', (socket) => {
             console.log(`Lobby not found for gameCode: ${gameCode} (socket ID: ${socket.id})`);
             return;
         }
+
         const player = lobbies[gameCode].players.find((p) => p.id === socket.id);
         if (!player) {
             console.log(`Player not found with socket ID: ${socket.id} in game ${gameCode}`);
             return;
         }
+
+        // Check if the game is over
+        if (lobbies[gameCode].gameOver) {
+            console.log(`Game over, player ${player.username} cannot move`);
+            return; // Don't allow movement if the game is over
+        }
+
         // Update the player's position
         player.x = position.x;
         player.y = position.y;
         console.log(`Player ${player.username} moved to (${player.x}, ${player.y})`);
-    
+
         // Broadcast the updated player positions to all players in the game
         io.to(gameCode).emit('updatePlayers', getPlayersInGame(gameCode)); // Broadcast new positions
     });
@@ -104,6 +112,7 @@ io.on('connection', (socket) => {
     socket.on('playerWon', ({ username }) => {
         const gameCode = playerGameMap[socket.id];
         if (gameCode && lobbies[gameCode]) {
+            lobbies[gameCode].gameOver = true; // Mark the game as over
             io.to(gameCode).emit('gameOver', { winner: username });
             console.log(`Player ${username} has won the game in lobby ${gameCode}`);
         }
