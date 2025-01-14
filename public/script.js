@@ -173,6 +173,7 @@ function createGameCanvas(player) {
     timerDisplay.style.borderRadius = '5px';
     document.body.appendChild(timerDisplay);
 
+    
 
     const ctx = canvas.getContext('2d');
     const miniMapCtx = miniMapCanvas.getContext('2d');
@@ -340,7 +341,19 @@ function createGameCanvas(player) {
                 ctx.drawImage(carImg, playerX, playerY, 50, 50);
                 drawMiniMap();
         
-            
+                ctx.fillStyle = "#0000ff"; // Blue color for the text
+                ctx.font = "24px Arial";
+                ctx.fillText(username, 10, 30);
+
+                const startLineY = canvas.height - 60 + roadOffsetY; // Scroll the start line with the road
+                ctx.strokeStyle = "#00FF00"; // Green color for the start line
+                ctx.lineWidth = 5;
+                ctx.beginPath();
+                ctx.moveTo(roadX, startLineY);
+                ctx.lineTo(roadX + roadWidth, startLineY);
+                ctx.stroke();
+
+
                 if (!finishLineDrawn && finishLineVisibleY <= 0) {
                     ctx.fillStyle = "#FF0000"; 
                     ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
