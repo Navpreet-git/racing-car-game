@@ -494,9 +494,23 @@ document.getElementById('play-button-join').addEventListener('click', () => {
 });
 function showInitialScreen() {
     document.querySelector('.initialScreen').style.display = 'block';
+
     document.querySelector('.createGame').style.display = 'none';
     document.querySelector('.joinGame').style.display = 'none';
+    document.querySelector('.game-screen').style.display = 'none'; // Nascondi la strada, macchina, ecc.
+    document.getElementById('winner-popup').style.display = 'none'; // Nascondi il pop-up vincitore, se visibile
+
+    const roadElement = document.querySelector('.road');
+    if (roadElement) {
+        roadElement.style.display = 'none';
+    }
+
+    const carElement = document.querySelector('.car');
+    if (carElement) {
+        carElement.style.display = 'none';
+    }
 }
+
 
 function replay(){
     window.location.href = ""; // name of file with lobby
@@ -505,6 +519,17 @@ function replay(){
 function returnHome(){
     window.location.href = "index.html";
 }
+
+function returnToInitialScreen() {
+    document.getElementById('winner-popup').style.display = 'none';
+    showInitialScreen();
+}
+
+window.onload = function () {
+    showInitialScreen(); 
+};
+
+
 
 socket.on('gameOver', ({ winner }) => {
     gameIsOver = true; // Stop movement

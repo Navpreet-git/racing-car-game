@@ -63,12 +63,21 @@
         </div>
     </div>
 
-    <div id="winner-popup" class="modal">
+    <div class="game-screen" style="display: none;">
+        <!-- Schermata con strada, macchina, ecc. -->
+        <div class="road" style="display: none;">
+            <div class="car" id="player-car" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div id="winner-popup" class="modal" style="display: none;">
         <div class="modal-content">
             <h2>Congratulations!</h2>
             <p id="winner-message"></p>
+            <button onclick="showInitialScreen()">Back to Main Screen</button>
         </div>
     </div>
+
     <div id="timer" style="display: none;">00:00</div>
     <script src="script.js"></script>
 </body>

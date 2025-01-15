@@ -313,3 +313,21 @@ button:hover {
     border-radius: 5px;
     display: none;
 }
+
+#winner-popup button {
+    padding: 10px 20px;
+    margin-top: 10px;
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+    #winner-popup button:hover {
+        background-color: #0056b3;
+    }
+
+.game-screen {
+    display: none;
+}
