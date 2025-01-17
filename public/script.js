@@ -493,21 +493,16 @@ document.getElementById('play-button-join').addEventListener('click', () => {
 
 });
 function showInitialScreen() {
-    document.querySelector('.initialScreen').style.display = 'block';
+    // Nascondi tutte le altre schermate
+    document.querySelector('.initialScreen').style.display = 'flex'; // Mostra la schermata principale
+    document.querySelector('.game-screen').style.display = 'none'; // Nascondi la schermata di gioco
+    document.querySelector('.createGame').style.display = 'none'; // Nascondi la schermata "create game"
+    document.querySelector('.joinGame').style.display = 'none'; // Nascondi la schermata "join game"
 
-    document.querySelector('.createGame').style.display = 'none';
-    document.querySelector('.joinGame').style.display = 'none';
-    document.querySelector('.game-screen').style.display = 'none'; // Nascondi la strada, macchina, ecc.
-    document.getElementById('winner-popup').style.display = 'none'; // Nascondi il pop-up vincitore, se visibile
-
-    const roadElement = document.querySelector('.road');
-    if (roadElement) {
-        roadElement.style.display = 'none';
-    }
-
-    const carElement = document.querySelector('.car');
-    if (carElement) {
-        carElement.style.display = 'none';
+    // Nascondi la finestra di congratulazioni
+    const winnerPopup = document.getElementById('winner-popup');
+    if (winnerPopup) {
+        winnerPopup.style.display = 'none'; // Assicurati che sia nascosta
     }
 }
 
