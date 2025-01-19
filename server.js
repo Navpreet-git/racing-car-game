@@ -40,7 +40,7 @@ io.on('connection', (socket) => {
     // Handle joining an existing game
     socket.on('joinGame', ({ gameCode, username }) => {
         if (lobbies[gameCode]) {
-            lobbies[gameCode].players.push({ id: socket.id, username, role: 'player', x: 100, y: 100 });
+            lobbies[gameCode].players.push({ id: socket.id, username, role: 'player' });
             socket.join(gameCode);
             playerGameMap[socket.id] = gameCode;
 
@@ -96,6 +96,8 @@ io.on('connection', (socket) => {
     });
     
     function getPlayersInGame(gameCode) {
+        console.log('getPlayersInGame', gameCode);
+        console.log(lobbies[gameCode]);
         return lobbies[gameCode].players.reduce((acc, player) => {
             acc[player.id] = { x: player.x, y: player.y, username: player.username, role: player.role };
             return acc;
