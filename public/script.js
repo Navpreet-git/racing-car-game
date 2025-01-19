@@ -444,54 +444,31 @@ function handleKeyMovement(e, isKeyDown) {
 
 
 document.getElementById('play-button').addEventListener('click', () => {
-    
-        console.log('isInCreateMode,',isInCreateMode)
-        const gameCode = document.getElementById('game-code-box').textContent;
-
-        socket.emit('startGame', gameCode);
-
-        socket.on('gameStarted', (player) => {
-            console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
-
-            document.querySelector('.initialScreen').style.display = 'none';
-            document.querySelector('.createGame').style.display = 'none';
-            document.querySelector('.joinGame').style.display = 'none';
-            document.getElementById('game-code-box').style.display = 'none';
-            document.getElementById('player-list').style.display = 'none';
-
-            createGameCanvas(player);
-
-            document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
-            document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
-        });
-       
-    
-});
-
-document.getElementById('play-button-join').addEventListener('click', () => {
-    
-    console.log('isInCreateMode,',isInCreateMode)
+    console.log('isInCreateMode,', isInCreateMode);
     const gameCode = document.getElementById('game-code-box').textContent;
 
-    socket.emit('startGame', gameCode);
-
-    socket.on('gameStarted', (player) => {
-        console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
-
-        document.querySelector('.initialScreen').style.display = 'none';
-        document.querySelector('.createGame').style.display = 'none';
-        document.querySelector('.joinGame').style.display = 'none';
-        document.getElementById('game-code-box').style.display = 'none';
-        document.getElementById('player-list').style.display = 'none';
-
-        createGameCanvas(player);
-
-        document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
-        document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
-    });
-   
-
+    // Notify server to start the game for this lobby
+    socket.emit('startGame', gameCode); // Emit to start the game for everyone in the lobby
+    console.log('Game start request sent for all players.');
 });
+
+socket.on('gameStarted', (player) => {
+    console.log(`Game started for player ${player.username} at (${player.x}, ${player.y})`);
+
+    document.querySelector('.initialScreen').style.display = 'none';
+    document.querySelector('.createGame').style.display = 'none';
+    document.querySelector('.joinGame').style.display = 'none';
+    document.getElementById('game-code-box').style.display = 'none';
+    document.getElementById('player-list').style.display = 'none';
+
+    createGameCanvas(player);
+
+    document.addEventListener('keydown', (e) => handleKeyMovement(e, true));
+    document.addEventListener('keyup', (e) => handleKeyMovement(e, false));
+});
+
+
+
 function showInitialScreen() {
     // Nascondi tutte le altre schermate
     document.querySelector('.initialScreen').style.display = 'flex'; // Mostra la schermata principale
