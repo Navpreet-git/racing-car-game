@@ -183,7 +183,7 @@ function createGameCanvas(player) {
 
 
     carImg.onload = () => {
-        generateObstacles(20);
+        generateObstacles(15);
 
         let roadOffsetY = 0; // Track road offset for scrolling
         function drawRoad() {
@@ -261,63 +261,48 @@ function createGameCanvas(player) {
             });
         }
 
-        function checkCollision(playerX, playerY, obstacle) {
-            return (
-                playerX < obstacle.x + obstacle.width &&
-                playerX + 50 > obstacle.x && 
-                playerY < obstacle.y + obstacle.height &&
-                playerY + 50 > obstacle.y 
-            );
-        }
+      
 
         let finishLineDrawn = false; // Flag to ensure finish line is drawn only once
 
-        let collisionDelay = 0; 
-
+        
         
         function gameLoop() {
             if (!gameIsOver) {
                 let finishLineVisibleY;
-                if (isCarMoving) {
-                    finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
+                let obstacleInFront = false; 
         
-                    if (finishLineVisibleY <= 0) {
-                        roadOffsetY = (roadOffsetY + speed) % 3000;
-                    }
-                }
-        
-                let collisionDetected = false;
-                let adjustedVelocityX = velocityX;
-                let adjustedVelocityY = velocityY;
-        
-                obstacles.forEach(obstacle => {
+                obstacles.forEach((obstacle) => {
                     const adjustedY = obstacle.y + roadOffsetY;
         
-                    
                     if (
-                        playerX < obstacle.x + obstacle.width &&
-                        playerX + 50 > obstacle.x && 
-                        playerY < adjustedY + obstacle.height &&
-                        playerY + 50 > adjustedY   
+                        obstacle.x < playerX + 50 && // Check if the car's x position overlaps with the obstacle
+                        obstacle.x + obstacle.width > playerX && // Check if the car's x position overlaps with the obstacle
+                        adjustedY <= playerY + 50 && // Check if the obstacle is within the car's y position
+                        adjustedY + obstacle.height >= playerY // Check if the obstacle's y position overlaps with the car's y position
                     ) {
-                        collisionDetected = true;
-        
-                        if (velocityX > 0 && playerX + 50 > obstacle.x) { 
-                            adjustedVelocityX = 0;
-                        }
-                        if (velocityX < 0 && playerX < obstacle.x + obstacle.width) { 
-                            adjustedVelocityX = 0;
-                        }
-                        if (velocityY > 0 && playerY + 50 > adjustedY) { 
-                            adjustedVelocityY = 0;
-                        }
-                        if (velocityY < 0 && playerY < adjustedY + obstacle.height) { 
-                            adjustedVelocityY = 0;
-                        }
+                        obstacleInFront = true;
                     }
                 });
         
-              
+                // Stop road scrolling if an obstacle is directly in front of the car
+                if (obstacleInFront) {
+                    roadOffsetY = roadOffsetY; // Stop scrolling if there's an obstacle in front
+                } else {
+                    // Allow road scrolling again
+                    if (isCarMoving) {
+                        finishLineVisibleY = canvas.height - (3000 - roadOffsetY);
+        
+                        if (finishLineVisibleY <= 0) {
+                            roadOffsetY = (roadOffsetY + speed) % 3000;
+                        }
+                    }
+                }
+        
+                let adjustedVelocityX = velocityX;
+                let adjustedVelocityY = velocityY;
+        
+                // Ensure the car stays within the road boundaries
                 const roadLeftBoundary = canvas.width / 3;
                 const roadRightBoundary = (canvas.width * 2) / 3 - 50;
         
@@ -327,7 +312,6 @@ function createGameCanvas(player) {
                 ) {
                     playerX += adjustedVelocityX;
                 } else {
-                    
                     playerX = Math.max(roadLeftBoundary, Math.min(playerX, roadRightBoundary));
                 }
         
@@ -344,7 +328,7 @@ function createGameCanvas(player) {
                 ctx.fillStyle = "#0000ff"; // Blue color for the username
                 ctx.font = "24px Arial";
                 ctx.fillText(username, 10, 30);
-
+        
                 const startLineY = canvas.height - 60 + roadOffsetY; // Scroll the start line with the road
                 ctx.strokeStyle = "#00FF00"; // Green color for the start line
                 ctx.lineWidth = 5;
@@ -352,8 +336,8 @@ function createGameCanvas(player) {
                 ctx.moveTo(roadX, startLineY);
                 ctx.lineTo(roadX + roadWidth, startLineY);
                 ctx.stroke();
-
-
+        
+        
                 if (!finishLineDrawn && finishLineVisibleY <= 0) {
                     ctx.fillStyle = "#FF0000"; 
                     ctx.fillRect(roadX, finishLineVisibleY, roadWidth, 10);
@@ -377,11 +361,9 @@ function createGameCanvas(player) {
                 }
             }
         
-            
             requestAnimationFrame(gameLoop);
         }
-        
-        
+               
         const roadWidth = canvas.width / 3;
         const roadX = (canvas.width - roadWidth) / 2;
         playerX = roadX + roadWidth / 2 - 25; // Centered in the road's middle lane
@@ -483,19 +465,6 @@ function showInitialScreen() {
     }
 }
 
-
-function replay(){
-    window.location.href = ""; // name of file with lobby
-}
-
-function returnHome(){
-    window.location.href = "index.html";
-}
-
-function returnToInitialScreen() {
-    document.getElementById('winner-popup').style.display = 'none';
-    showInitialScreen();
-}
 
 window.onload = function () {
     showInitialScreen(); 
