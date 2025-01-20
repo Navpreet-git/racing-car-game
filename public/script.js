@@ -25,6 +25,7 @@ obstacleImages.forEach((src) => {
     img.src = src;
     obstacleObjects.push(img);
 });
+
 function generateObstacles(count) {
     console.log('Generating obstacles');
     for (let i = 0; i < count; i++) {
@@ -227,7 +228,7 @@ function createGameCanvas(player) {
                 if (adjustedY + obstacle.height > 0 && adjustedY < canvas.height) {
                     ctx.drawImage(obstacle.img, obstacle.x, adjustedY, obstacle.width, obstacle.height);
                 } else {
-                    console.log(`Obstacle ${index} out of view: ${obstacle.x}, ${adjustedY}`);
+                   // console.log(`Obstacle ${index} out of view: ${obstacle.x}, ${adjustedY}`);
                 }
             });
         }
@@ -477,10 +478,14 @@ socket.on('gameOver', ({ winner }) => {
 
     const winnerPopup = document.getElementById('winner-popup');
     const winnerMessage = document.getElementById('winner-message');
-    
+    const refreshButton = document.getElementById('refresh-button');
+
     const formattedTime = formatTime(elapsedTime);
 
     winnerMessage.innerHTML = `${winner} has won the game!<br>Time: ${formattedTime}`;
 
     winnerPopup.style.display = 'block';
+    refreshButton.addEventListener('click', () => {
+        location.reload(); // Refresh the page
+    });
 }); 
