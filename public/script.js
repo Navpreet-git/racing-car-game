@@ -327,12 +327,20 @@ function createGameCanvas(player) {
         
                 ctx.drawImage(carImg, playerX, playerY, 50, 50);
                 drawMiniMap();
-        
-                ctx.fillStyle = "#0000ff"; // Blue color for the username
-                ctx.font = "24px Arial";
-                ctx.fillText(username, 10, 30);
-        
-                const startLineY = canvas.height - 60 + roadOffsetY; // Scroll the start line with the road
+        ctx.fillStyle = "#0000ff"; // Blue color for the username
+        ctx.font = "24px Arial";
+        ctx.fillText(username, 10, 30);
+
+        // Draw other players' cars and usernames
+        Object.keys(otherPlayers).forEach((playerId, index) => {
+            const otherPlayer = otherPlayers[playerId];
+            if (otherPlayer.username !== username) {
+                ctx.fillStyle = "#FF0000"; // Red color for other players' usernames
+                ctx.fillText(otherPlayer.username, 10, 60 + index * 30); // Display usernames in a list
+            }
+        });
+
+        const startLineY = canvas.height - 60 + roadOffsetY; // Scroll the start line with the road
                 ctx.strokeStyle = "#00FF00"; // Green color for the start line
                 ctx.lineWidth = 5;
                 ctx.beginPath();
