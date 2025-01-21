@@ -1,5 +1,4 @@
 const socket = io();
-const canvas = document.createElement('canvas');
 let username = "";
 let playerX, playerY, velocityX = 0, velocityY = 0, speed = 2;
 let isInCreateMode = false;
@@ -289,6 +288,9 @@ function createGameCanvas(player) {
                 // Stop road scrolling if an obstacle is directly in front of the car
                 if (obstacleInFront) {
                     roadOffsetY = roadOffsetY; // Stop scrolling if there's an obstacle in front
+                    if (velocityY < 0) {
+                        velocityY = 0; // Prevent upward movement if there's an obstacle in front
+                    }
                 } else {
                     // Allow road scrolling again
                     if (isCarMoving) {
